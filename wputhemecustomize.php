@@ -4,7 +4,7 @@
 Plugin Name: WPU Theme Customize
 Plugin URI: https://github.com/Darklg/WPUtilities
 Description: Advanced customization for theme
-Version: 0.6
+Version: 0.6.1
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -66,7 +66,7 @@ class WPUCustomizeTheme
         $code_version = md5($str_settings . $str_sections);
 
         if ($this->cached_code_version !== $code_version) {
-            $content_cache = "(function($) {\n" . "var wputhcu_setval = function(selector,property,val) {" . "if(property == 'background-image'){" . "newval = 'url('+newval+')';" . "}" . "$(selector).css(property, newval);" . "};\n";
+            $content_cache = "(function($) {\n" . "var wputhcu_setval = function(selector,property,val) {" . "if(property == 'background-image'){" . "val = 'url('+val+')';" . "}" . "$(selector).css(property, val);" . "};\n";
             foreach ($this->settings as $id => $setting) {
                 $tmp_id = 'wputheme_' . $id;
                 $property = trim(esc_attr($setting['css_property']));
