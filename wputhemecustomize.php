@@ -4,21 +4,22 @@
 Plugin Name: WPU Theme Customize
 Plugin URI: https://github.com/Darklg/WPUtilities
 Description: Advanced customization for theme
-Version: 0.6.1
+Version: 0.7
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
 */
 
-class WPUCustomizeTheme
-{
+class WPUCustomizeTheme {
     function __construct() {
 
         // Init some values
         $upload_dir = wp_upload_dir();
         $this->up_dir = $upload_dir['basedir'] . '/wputheme-cache';
         $this->up_url = $upload_dir['baseurl'] . '/wputheme-cache';
+        $this->css_file = $this->up_dir . '/theme-customizer.css';
+        $this->css_file_url = $this->up_url . '/theme-customizer.css';
         $this->cache_file = $this->up_dir . '/theme-customizer.js';
         $this->cache_file_url = $this->up_url . '/theme-customizer.js';
         $this->cached_code_version = get_option('wputh_customize_theme_version');
@@ -36,9 +37,15 @@ class WPUCustomizeTheme
         add_action('customize_preview_init', array(&$this,
             'customizer_live_preview'
         ));
+        add_action('customize_save_after', array(&$this,
+            'customize_save_after'
+        ));
         add_action('current_screen', array(&$this,
             'regenerate_js_file'
         ));
+        add_action('wp_enqueue_scripts', array(&$this,
+            'wp_enqueue_modifications'
+        ) , 999);
     }
 
     // Load filters
@@ -72,10 +79,7 @@ class WPUCustomizeTheme
                 $property = trim(esc_attr($setting['css_property']));
                 $selector = trim(esc_attr($setting['css_selector']));
                 if (!empty($property) && !empty($selector)) {
-                    $content_cache.= "wp.customize('" . $tmp_id . "', function(value) {"
-                    . "value.bind(function(val){"
-                    . "wputhcu_setval('" . $selector . "','" . $property. "',val);"
-                    . "});});\n";
+                    $content_cache.= "wp.customize('" . $tmp_id . "', function(value) {" . "value.bind(function(val){" . "wputhcu_setval('" . $selector . "','" . $property . "',val);" . "});});\n";
                 }
             }
             $content_cache.= "})(jQuery);\n";
@@ -90,7 +94,7 @@ class WPUCustomizeTheme
     }
 
     // Display theme modifications in front-end
-    function display_mod() {
+    function generate_theme_css() {
         $content = '';
         foreach ($this->settings as $id => $setting) {
             $tmp_id = 'wputheme_' . $id;
@@ -107,9 +111,21 @@ class WPUCustomizeTheme
                 $content.= $selector . '{' . $property . ':' . $mod . '}';
             }
         }
-        if (!empty($content)) {
-            echo '<style>' . $content . '</style>';
+        return $content;
+    }
+
+    function wp_enqueue_modifications() {
+        if (is_admin()) {
+            return;
         }
+        $css = $this->generate_theme_css();
+        if (empty($css)) {
+            return;
+        }
+        $code_version = get_option('wputh_customize_theme_css_date');
+
+        wp_register_style('wputhemecustomize', $this->css_file_url, array() , $code_version);
+        wp_enqueue_style('wputhemecustomize');
     }
 
     // Register functions
@@ -162,7 +178,7 @@ class WPUCustomizeTheme
             if ($setting['css_property'] == 'font-size') {
                 $detail_control['type'] = 'select';
                 $detail_control['choices'] = array();
-                for ($i = 8; $i <= 70; $i++) {
+                for ($i = 8;$i <= 70;$i++) {
                     $detail_control['choices'][$i . 'px'] = $i . 'px';
                 }
                 if (empty($detail_setting['default']) || !array_key_exists($detail_setting['default'], $detail_control['choices'])) {
@@ -195,7 +211,7 @@ class WPUCustomizeTheme
                 $detail_control['type'] = 'select';
                 $detail_control['choices'] = array();
                 $detail_setting['default'] = $detail_setting['default'] * 10;
-                for ($i = 1; $i <= 50; $i++) {
+                for ($i = 1;$i <= 50;$i++) {
                     $detail_control['choices'][$i] = ($i / 10);
                 }
                 if (empty($detail_setting['default']) || !array_key_exists($detail_setting['default'], $detail_control['choices'])) {
@@ -208,12 +224,10 @@ class WPUCustomizeTheme
                 case 'color':
                 case 'background-color':
                     $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'wputheme_' . $id, $detail_control));
-                    break;
-
+                break;
                 case 'background-image':
                     $wp_customize->add_control(new WP_Customize_Image_Control($wp_customize, 'wputheme_' . $id, $detail_control));
-                    break;
-
+                break;
                 default:
                     $wp_customize->add_control(new WP_Customize_Control($wp_customize, 'wputheme_' . $id, $detail_control));
             }
@@ -228,6 +242,16 @@ class WPUCustomizeTheme
             'jquery',
             'customize-preview'
         ) , $this->cached_code_version, true);
+    }
+
+    function customize_save_after() {
+
+        // generate css
+        $css = '@charset "UTF-8";' . $this->generate_theme_css();
+        file_put_contents($this->css_file, $css);
+
+        // Save latest update
+        update_option('wputh_customize_theme_css_date', time());
     }
 }
 
