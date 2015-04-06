@@ -4,7 +4,7 @@
 Plugin Name: WPU Theme Customize
 Plugin URI: https://github.com/Darklg/WPUtilities
 Description: Advanced customization for theme
-Version: 0.7
+Version: 0.7.1
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -38,6 +38,9 @@ class WPUCustomizeTheme {
             'customizer_live_preview'
         ));
         add_action('customize_save_after', array(&$this,
+            'customize_save_after'
+        ));
+        add_action('after_switch_theme', array(&$this,
             'customize_save_after'
         ));
         add_action('current_screen', array(&$this,
