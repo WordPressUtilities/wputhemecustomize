@@ -4,7 +4,7 @@
 Plugin Name: WPU Theme Customize
 Plugin URI: https://github.com/Darklg/WPUtilities
 Description: Advanced customization for theme
-Version: 0.7.1
+Version: 0.7.2
 Author: Darklg
 Author URI: http://darklg.me/
 License: MIT License
@@ -25,9 +25,6 @@ class WPUCustomizeTheme {
         $this->cached_code_version = get_option('wputh_customize_theme_version');
 
         // Set events
-        add_action('wp_head', array(&$this,
-            'display_mod'
-        ));
         add_action('init', array(&$this,
             'init'
         ));
